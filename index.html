@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ISITRAMADAN? | MRBENWORKSHOP</title>
+    <style>
+        body { text-align: center; font-family: Arial, sans-serif; margin: 0; padding: 0; }
+        #yes-text { font-size: 3em; font-weight: bold; color: green; }
+        #reminders { margin-top: 20px; display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
+        .reminder { padding: 10px; border: 1px solid #ddd; border-radius: 5px; background: #f9f9f9; }
+        footer { margin-top: 30px; font-size: 0.9em; }
+        #popup, #error-popup { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 20px; border: 1px solid #ccc; display: none; width: 90%; max-width: 400px; }
+        #error-popup { text-align: center; }
+        @media (max-width: 768px) {
+            #yes-text { font-size: 2em; }
+            .reminder { width: 80%; }
+        }
+        @media (max-width: 480px) {
+            #yes-text { font-size: 1.8em; }
+            .reminder { width: 90%; }
+        }
+    </style>
+</head>
+<body>
+    <div id="popup">
+        <form id="user-form">
+            <label for="username">Enter your name:</label>
+            <input type="text" id="username" required>
+            <br>
+            <input type="checkbox" id="know-mrben">
+            <label for="know-mrben">Do you know MRBEN?</label>
+            <br>
+            <button type="submit" id="continue-button">Finish</button>
+        </form>
+        <form id="mrben-form" style="display: none;">
+            <label for="mrben-name">What is the real name of MRBEN?</label>
+            <input type="text" id="mrben-name" required>
+            <br>
+            <button type="submit">Continue</button>
+        </form>
+        <form id="phone-form" style="display: none;">
+            <label for="phone-number">Enter your phone number (optional):</label>
+            <input type="text" id="phone-number">
+            <br>
+            <button type="submit">Finish</button>
+        </form>
+    </div>
+
+    <div id="error-popup">
+        <p>You entered the wrong name, that means you don't know him. Thank you, may Allah bless you.</p>
+        <button onclick="closeErrorPopup()">OK</button>
+    </div>
+
+    <h1>WELCOME TO MRBENWORKSHOP</h1>
+    <div id="user-greeting"></div>
+    <div id="ramadan-check">IS IT RAMADAN? | YANZU AZUMINE?</div>
+    <div id="reminders"></div>
+    <footer>
+        &copy; MRBENWORKSHOP 2025 | <span id="islamic-year">ISLAMIC YEAR</span> HIJRA
+    </footer>
+
+    <script>
+        const popup = document.getElementById("popup");
+        const errorPopup = document.getElementById("error-popup");
+        const userForm = document.getElementById("user-form");
+        const mrbenForm = document.getElementById("mrben-form");
+        const phoneForm = document.getElementById("phone-form");
+        const knowMrBen = document.getElementById("know-mrben");
+        const continueButton = document.getElementById("continue-button");
+        const correctMrBenNames = ["YUSIF IBRAHIM", "YUSUF IBRAHIM", "YUSUF", "YUSIF"];
+        const allowedNumbers = ["1234567890", "0987654321"];
+        
+        knowMrBen.addEventListener("change", function() {
+            continueButton.textContent = knowMrBen.checked ? "Continue" : "Finish";
+        });
+        
+        function getUserName() {
+            let userName = localStorage.getItem("username");
+            if (!userName) {
+                popup.style.display = "block";
+            } else {
+                document.getElementById("user-greeting").innerText = `Welcome, ${userName.toUpperCase()}!`;
+            }
+        }
+        
+        userForm.addEventListener("submit", function(event) {
+            event.preventDefault();
+            let userName = document.getElementById("username").value;
+            localStorage.setItem("username", userName.toUpperCase());
+            if (knowMrBen.checked) {
+                userForm.style.display = "none";
+                mrbenForm.style.display = "block";
+            } else {
+                popup.style.display = "none";
+                document.getElementById("user-greeting").innerText = `Welcome, ${userName.toUpperCase()}!`;
+            }
+        });
+
+        mrbenForm.addEventListener("submit", function(event) {
+            event.preventDefault();
+            let mrbenAnswer = document.getElementById("mrben-name").value.toUpperCase();
+            if (correctMrBenNames.includes(mrbenAnswer)) {
+                mrbenForm.style.display = "none";
+                phoneForm.style.display = "block";
+            } else {
+                errorPopup.style.display = "block";
+                popup.style.display = "none";
+            }
+        });
+
+        function closeErrorPopup() {
+            errorPopup.style.display = "none";
+        }
+
+        phoneForm.addEventListener("submit", function(event) {
+            event.preventDefault();
+            let phoneNumber = document.getElementById("phone-number").value;
+            popup.style.display = "none";
+            if (allowedNumbers.includes(phoneNumber)) {
+                console.log("Special action triggered!");
+            }
+        });
+        
+        async function fetchIslamicDate() {
+            try {
+                let response = await fetch("https://api.aladhan.com/v1/gToH");
+                let data = await response.json();
+                let hijriDate = data.data.hijri;
+                document.getElementById("islamic-year").innerText = hijriDate.year;
+                checkRamadan(hijriDate.month.en);
+            } catch (error) {
+                console.error("Error fetching Islamic date:", error);
+                document.getElementById("ramadan-check").innerText = "Could not fetch Islamic date.";
+            }
+        }
+
+        function checkRamadan(month) {
+            let isRamadan = month === "Ramadan";
+            let displayText = isRamadan ? "YES" : "NO";
+            document.getElementById("ramadan-check").innerHTML += `<div id='yes-text'>${displayText}</div>`;
+        }
+
+        function showReminders() {
+            let reminders = [
+                "Remember to pray on time!",
+                "Read at least one page of the Quran today.",
+                "Give charity, even if it's small.",
+                "Be kind to others and spread peace.",
+                "Make lots of dua for yourself and others.",
+                "Fast with sincerity and patience."
+            ];
+            let shuffled = reminders.sort(() => 0.5 - Math.random());
+            let selected = shuffled.slice(0, 2 + Math.floor(Math.random() * 2));
+            document.getElementById("reminders").innerHTML = selected.map(reminder => `<div class='reminder'>${reminder}</div>`).join('');
+        }
+
+        getUserName();
+        fetchIslamicDate();
+        showReminders();
+    </script>
+</body>
+</html>
